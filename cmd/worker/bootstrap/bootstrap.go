@@ -13,6 +13,8 @@ import (
 	dbconfig "mms_api/pkg/db/postgres"
 	"mms_api/pkg/logger"
 	"mms_api/pkg/monitoring"
+
+	"github.com/go-co-op/gocron"
 )
 
 type Worker struct {
@@ -139,6 +141,32 @@ func (w *Worker) Run() error {
 			w.alertMonitor.SendAlert("dados_incompletos", "Dados incompletos para "+pair)
 		}
 	}
+
+	return nil
+}
+
+// RunScheduled executa o worker em um intervalo programado
+func (w *Worker) RunScheduled(ctx context.Context, interval time.Duration) error {
+	scheduler := gocron.NewScheduler(time.UTC)
+
+	// Configurar job para executar no intervalo especificado
+	_, err := scheduler.Every(interval).Do(func() {
+		if err := w.Run(); err != nil {
+			w.logger.Error("Erro na execução programada do worker", err)
+			w.alertMonitor.SendAlert("erro_execucao", "Erro na execução programada do worker")
+		}
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// Iniciar scheduler em uma goroutine
+	scheduler.StartAsync()
+
+	// Aguardar sinal de cancelamento do contexto
+	<-ctx.Done()
+	scheduler.Stop()
 
 	return nil
 }
