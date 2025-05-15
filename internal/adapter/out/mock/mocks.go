@@ -9,13 +9,24 @@ import (
 
 // MockAlertMonitor é um mock do monitor de alertas para testes
 type MockAlertMonitor struct {
-	SendAlertFunc func(alertType string, message string)
+	SendAlertFunc    func(alertType string, message string)
+	SentEmailAlerts  []EmailAlert
+	AlertTypesCalled []string
+	MessagesSent     []string
+}
+
+type EmailAlert struct {
+	Type    string
+	Message string
+	To      []string
 }
 
 func (m *MockAlertMonitor) SendAlert(alertType string, message string) {
 	if m.SendAlertFunc != nil {
 		m.SendAlertFunc(alertType, message)
 	}
+	m.AlertTypesCalled = append(m.AlertTypesCalled, alertType)
+	m.MessagesSent = append(m.MessagesSent, message)
 }
 
 // MockCandleAPI é um mock da API de candles para testes

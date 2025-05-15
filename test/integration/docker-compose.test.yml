@@ -16,6 +16,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+      
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 
   test:
     build:
@@ -33,3 +39,11 @@ services:
       DB_PASSWORD: test_password
       DB_NAME: test_db
       DB_SSLMODE: disable
+      ALERT_ENABLED: "true"
+      ALERT_EMAIL_ENABLED: "true"
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_USERNAME: test@example.com
+      SMTP_PASSWORD: password
+      ALERT_FROM_EMAIL: test@example.com
+      ALERT_TO_EMAILS: alerts@example.com

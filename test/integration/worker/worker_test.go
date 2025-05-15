@@ -1,6 +1,7 @@
 package worker_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,7 +19,7 @@ import (
 func TestWorkerIntegration(t *testing.T) {
 	// Configurar servidor mock para a API do Mercado Bitcoin
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Simular resposta da API de candles
+		// Simular resposta da API de candles com dados incompletos para forçar alerta
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{
@@ -31,15 +32,6 @@ func TestWorkerIntegration(t *testing.T) {
 					"close": 152000.0,
 					"volume": 10.5,
 					"quantity": 5
-				},
-				{
-					"timestamp": "2025-05-13T00:00:00Z",
-					"open": 148000.0,
-					"high": 151000.0,
-					"low": 147000.0,
-					"close": 150000.0,
-					"volume": 8.3,
-					"quantity": 4
 				}
 			]
 		}`))
@@ -48,7 +40,7 @@ func TestWorkerIntegration(t *testing.T) {
 
 	// Configurar banco de dados de teste
 	dbConfig := postgres.Config{
-		Host:     "localhost",
+		Host:     "test-db",
 		Port:     5432,
 		User:     "test_user",
 		Password: "test_password",
@@ -120,4 +112,34 @@ func TestWorkerIntegration(t *testing.T) {
 		assert.NotZero(t, mms50)
 		assert.NotZero(t, mms200)
 	}
+
+	// Verificar se o alerta foi enviado por email via MailHog
+	mailhogClient := &http.Client{Timeout: 5 * time.Second}
+	resp, err := mailhogClient.Get("http://mailhog:8025/api/v2/messages")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	// Verificar se há mensagens no MailHog
+	var messages struct {
+		Items []struct {
+			Content struct {
+				Headers struct {
+					Subject []string `json:"subject"`
+					To      []string `json:"to"`
+				} `json:"headers"`
+				Body string `json:"body"`
+			} `json:"Content"`
+		} `json:"items"`
+	}
+
+	err = json.NewDecoder(resp.Body).Decode(&messages)
+	require.NoError(t, err)
+
+	// Deve haver pelo menos uma mensagem de alerta
+	assert.Greater(t, len(messages.Items), 0, "Deveria haver mensagens de alerta")
+
+	// Verificar o conteúdo do último alerta
+	lastMessage := messages.Items[len(messages.Items)-1]
+	assert.Contains(t, lastMessage.Content.Headers.Subject[0], "Alerta: dados_incompletos")
+	assert.Contains(t, lastMessage.Content.Body, "Dados incompletos para BRLBTC")
 }

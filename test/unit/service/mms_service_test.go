@@ -9,6 +9,8 @@ import (
 	"mms_api/internal/adapter/out/mock"
 	"mms_api/internal/application/service"
 	"mms_api/internal/domain/model"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCalculateAndSaveMMSForRange(t *testing.T) {
@@ -249,6 +251,90 @@ func TestCheckDataCompleteness(t *testing.T) {
 			if err == nil && got != tt.want {
 				t.Errorf("CheckDataCompleteness() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestAlertScenarios(t *testing.T) {
+	now := time.Now()
+	ctx := context.Background()
+
+	tests := []struct {
+		name           string
+		setupMocks     func(*mock.MockMMSRepository, *mock.MockCandleAPI, *mock.MockAlertMonitor)
+		expectedAlert  string
+		expectedEmails int
+		wantErr        bool
+	}{
+		{
+			name: "deve enviar alerta quando dados estiverem incompletos",
+			setupMocks: func(repo *mock.MockMMSRepository, api *mock.MockCandleAPI, monitor *mock.MockAlertMonitor) {
+				// Mock para retornar dados incompletos
+				repo.CheckDataCompletenessFunc = func(ctx context.Context, pair string, from, to time.Time) (bool, []time.Time, error) {
+					missingDates := []time.Time{now.AddDate(0, 0, -1)}
+					return false, missingDates, nil
+				}
+
+				var alertsSent int
+				monitor.SendAlertFunc = func(alertType string, message string) {
+					alertsSent++
+					if alertType != "dados_incompletos" {
+						t.Errorf("tipo de alerta errado, esperado 'dados_incompletos', recebido '%s'", alertType)
+					}
+				}
+			},
+			expectedAlert: "dados_incompletos",
+			wantErr:       false,
+		},
+		{
+			name: "deve enviar alerta quando houver erro na API",
+			setupMocks: func(repo *mock.MockMMSRepository, api *mock.MockCandleAPI, monitor *mock.MockAlertMonitor) {
+				// Mock para simular erro na API
+				api.GetCandlesFunc = func(ctx context.Context, pair string, from, to time.Time) ([]model.Candle, error) {
+					return nil, errors.New("erro de conexão com a API")
+				}
+
+				var alertsSent int
+				monitor.SendAlertFunc = func(alertType string, message string) {
+					alertsSent++
+					if alertType != "falha_atualizacao" {
+						t.Errorf("tipo de alerta errado, esperado 'falha_atualizacao', recebido '%s'", alertType)
+					}
+				}
+			},
+			expectedAlert: "falha_atualizacao",
+			wantErr:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Preparar mocks
+			mockRepo := &mock.MockMMSRepository{}
+			mockAPI := &mock.MockCandleAPI{}
+			mockMonitor := &mock.MockAlertMonitor{}
+
+			// Configurar mocks
+			if tt.setupMocks != nil {
+				tt.setupMocks(mockRepo, mockAPI, mockMonitor)
+			}
+
+			// Criar serviço
+			service := service.NewMMSService(mockRepo, mockAPI, mockMonitor)
+
+			// Executar operação que deve gerar alerta
+			_, err := service.CheckDataCompleteness(ctx, "BRLBTC")
+
+			// Verificar resultado
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+
+			// Verificar se os alertas foram enviados corretamente
+			assert.Equal(t, tt.expectedAlert, mockMonitor.AlertTypesCalled[0])
+			assert.NotEmpty(t, mockMonitor.MessagesSent)
 		})
 	}
 }

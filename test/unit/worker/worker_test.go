@@ -26,6 +26,7 @@ func TestWorker_Run(t *testing.T) {
 		name           string
 		setupMocks     func(*mock.MockMMSRepository, *mock.MockCandleAPI, *mock.MockAlertMonitor)
 		expectedAlerts []string
+		expectedEmails []mock.EmailAlert
 		wantErr        bool
 	}{
 		{
@@ -48,6 +49,11 @@ func TestWorker_Run(t *testing.T) {
 							Close:     148000.0,
 						},
 					}, nil
+				}
+
+				// Mock SendAlert para verificar se nenhum alerta é enviado
+				monitor.SendAlertFunc = func(alertType string, message string) {
+					t.Error("Não deveria enviar alertas em caso de sucesso")
 				}
 
 				// Mock SaveBatch sem erros
@@ -113,6 +119,52 @@ func TestWorker_Run(t *testing.T) {
 			},
 			expectedAlerts: []string{"dados_incompletos"},
 			wantErr:        false,
+		},
+		{
+			name: "deve enviar alerta por email quando dados estiverem incompletos",
+			setupMocks: func(repo *mock.MockMMSRepository, api *mock.MockCandleAPI, monitor *mock.MockAlertMonitor) {
+				repo.GetLastTimestampFunc = func(ctx context.Context, pair string) (time.Time, error) {
+					return lastYear, nil
+				}
+
+				api.GetCandlesFunc = func(ctx context.Context, pair string, from, to time.Time) ([]model.Candle, error) {
+					return []model.Candle{
+						{
+							Timestamp: yesterday,
+							Close:     150000.0,
+						},
+					}, nil
+				}
+
+				repo.SaveBatchFunc = func(ctx context.Context, mms []model.MMS) error {
+					return nil
+				}
+
+				// Simular dados incompletos
+				repo.CheckDataCompletenessFunc = func(ctx context.Context, pair string, from, to time.Time) (bool, []time.Time, error) {
+					missingDates := []time.Time{yesterday.Add(-48 * time.Hour)}
+					return false, missingDates, nil
+				}
+
+				var alertsCalled []string
+				monitor.SendAlertFunc = func(alertType string, message string) {
+					alertsCalled = append(alertsCalled, alertType)
+					monitor.SentEmailAlerts = append(monitor.SentEmailAlerts, mock.EmailAlert{
+						Type:    alertType,
+						Message: message,
+						To:      []string{"destino@email.com"},
+					})
+				}
+			},
+			expectedAlerts: []string{"dados_incompletos"},
+			expectedEmails: []mock.EmailAlert{
+				{
+					Type:    "dados_incompletos",
+					Message: "Dados incompletos para BRLBTC",
+					To:      []string{"destino@email.com"},
+				},
+			},
+			wantErr: false,
 		},
 	}
 
