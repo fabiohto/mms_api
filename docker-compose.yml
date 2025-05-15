@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # API Service
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=mms_user
+      - DB_PASSWORD=mms_password
+      - DB_NAME=mms_db
+      - MB_API_URL=https://api.mercadobitcoin.net/v4
+      - ALERTS_ENABLED=true
+    depends_on:
+      - postgres
+    networks:
+      - mms_network
+
+  # Worker Service
+  worker:
+    build:
+      context: .
+      dockerfile: docker/worker.Dockerfile
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=mms_user
+      - DB_PASSWORD=mms_password
+      - DB_NAME=mms_db
+      - MB_API_URL=https://api.mercadobitcoin.net/v4
+      - ALERTS_ENABLED=true
+    depends_on:
+      - postgres
+    networks:
+      - mms_network
+
+  # PostgreSQL Service
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=mms_user
+      - POSTGRES_PASSWORD=mms_password
+      - POSTGRES_DB=mms_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - mms_network
+
+  # Prometheus Service
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - mms_network
+
+volumes:
+  postgres_data:
+  prometheus_data:
+
+networks:
+  mms_network:
+    driver: bridge

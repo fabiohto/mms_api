@@ -1,0 +1,40 @@
+# Git
+.git
+.gitignore
+
+# Docker
+docker-compose.yml
+Dockerfile
+.docker
+.dockerignore
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# IDE specific files
+.idea
+.vscode
+*.swp
+*.swo
+
+# Dependency directories
+vendor/
+
+# Test files
+test/
+coverage.txt
+
+# Local development files
+*.env
+*.log
+tmp/
+
+# Generated files
+bin/
+dist/
