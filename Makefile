@@ -4,7 +4,7 @@ VERSION?=1.0.0
 GOCMD=go
 GOTEST=$(GOCMD) test
 GOMOD=$(GOCMD) mod
-DOCKER_COMPOSE=docker-compose
+DOCKER_COMPOSE=`docker compose`
 DOCKER_COMPOSE_FILE=docker-compose.yml
 SWAG=swag
 
@@ -67,7 +67,7 @@ logs: ## Mostra logs dos containers
 
 migrate: ## Executa migrações do banco de dados
 	@printf "$(GREEN)Executando migrações...$(NC)\n"
-	docker-compose -f $(DOCKER_COMPOSE_FILE) run --rm api go run $(MIGRATIONS_DIR)/initial_load.go
+	docker compose -f $(DOCKER_COMPOSE_FILE) run --rm api go run $(MIGRATIONS_DIR)/initial_load.go
 
 run-api: ## Executa apenas a API
 	@printf "$(GREEN)Executando API...$(NC)\n"

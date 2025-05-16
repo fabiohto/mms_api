@@ -93,17 +93,17 @@ make down
 
 1. Construir as imagens
 ```bash
-docker-compose build
+docker compose build
 ```
 
 2. Iniciar os serviços
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 3. Verificar logs
 ```bash
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ## Testes
