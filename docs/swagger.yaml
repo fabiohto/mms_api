@@ -1,0 +1,69 @@
+basePath: /api/v1
+definitions:
+  handlers.MMSResponse:
+    properties:
+      mms:
+        example: 45000
+        type: number
+      timestamp:
+        example: 1620000000
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API para cálculo e consulta de Médias Móveis Simples de criptomoedas
+  title: MMS API
+  version: "1.0"
+paths:
+  /mms:
+    get:
+      consumes:
+      - application/json
+      description: Retorna as médias móveis simples (MMS) para um par de criptomoedas
+        em um intervalo de tempo
+      parameters:
+      - description: Par de criptomoedas (BRLBTC ou BRLETH)
+        in: query
+        name: pair
+        required: true
+        type: string
+      - description: Timestamp Unix de início
+        in: query
+        name: from
+        required: true
+        type: integer
+      - description: 'Timestamp Unix de fim (opcional, default: dia anterior)'
+        in: query
+        name: to
+        type: integer
+      - description: Período da média móvel (20, 50 ou 200)
+        in: query
+        name: range
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lista de médias móveis
+          schema:
+            items:
+              $ref: '#/definitions/handlers.MMSResponse'
+            type: array
+        "400":
+          description: Erro de validação
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Erro interno
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter médias móveis simples
+      tags:
+      - MMS
+swagger: "2.0"

@@ -1,3 +1,4 @@
+// Package handlers provides HTTP request handlers
 package handlers
 
 import (
@@ -14,8 +15,8 @@ import (
 
 // MMSResponse representa a resposta da API para consulta de MMS
 type MMSResponse struct {
-	Timestamp int64   `json:"timestamp"`
-	MMS       float64 `json:"mms"`
+	Timestamp int64   `json:"timestamp" example:"1620000000"`
+	MMS       float64 `json:"mms" example:"45000.0"`
 }
 
 // mmsHandler implementa os handlers HTTP para MMS
@@ -33,6 +34,19 @@ func NewMMSHandler(mmsService service.MMSService, logger logger.Logger) *mmsHand
 }
 
 // GetMMSByPair implementa o handler para a rota GET /:pair/mms
+// @Summary Obter médias móveis simples
+// @Description Retorna as médias móveis simples (MMS) para um par de criptomoedas em um intervalo de tempo
+// @Tags MMS
+// @Accept json
+// @Produce json
+// @Param pair query string true "Par de criptomoedas (BRLBTC ou BRLETH)"
+// @Param from query int true "Timestamp Unix de início"
+// @Param to query int false "Timestamp Unix de fim (opcional, default: dia anterior)"
+// @Param range query int true "Período da média móvel (20, 50 ou 200)"
+// @Success 200 {array} MMSResponse "Lista de médias móveis"
+// @Failure 400 {object} map[string]string "Erro de validação"
+// @Failure 500 {object} map[string]string "Erro interno"
+// @Router /mms [get]
 func (h *mmsHandler) GetMMSByPair(c *gin.Context) {
 	// Extrair o par dos parâmetros da URL
 	pair := c.Param("pair")

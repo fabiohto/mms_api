@@ -6,12 +6,13 @@ GOTEST=$(GOCMD) test
 GOMOD=$(GOCMD) mod
 DOCKER_COMPOSE=docker-compose
 DOCKER_COMPOSE_FILE=docker-compose.yml
+SWAG=swag
 
 # Cores para output
 GREEN=\033[0;32m
 NC=\033[0m # No Color
 
-.PHONY: all test clean docker-build help deps lint integration-test up down logs ps
+.PHONY: all test clean docker-build help deps lint integration-test up down logs ps swagger
 
 all: deps test integration-test
 
@@ -40,7 +41,11 @@ integration-test: ## Executa testes de integração com docker-compose
 	$(DOCKER_COMPOSE) -f test/integration/docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from test
 	$(DOCKER_COMPOSE) -f test/integration/docker-compose.test.yml down -v
 
-build: ## Build das imagens Docker
+swagger: ## Gera documentação Swagger
+	@printf "$(GREEN)Gerando documentação Swagger...$(NC)\n"
+	$(SWAG) init -g internal/adapter/in/http/routes.go --output docs
+
+build: swagger ## Build das imagens Docker
 	@printf "$(GREEN)Construindo imagens Docker...$(NC)\n"
 	$(DOCKER_COMPOSE) -f $(DOCKER_COMPOSE_FILE) build
 

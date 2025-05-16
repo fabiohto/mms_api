@@ -1,0 +1,101 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API para cálculo e consulta de Médias Móveis Simples de criptomoedas",
+        "title": "MMS API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api/v1",
+    "paths": {
+        "/mms": {
+            "get": {
+                "description": "Retorna as médias móveis simples (MMS) para um par de criptomoedas em um intervalo de tempo",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "MMS"
+                ],
+                "summary": "Obter médias móveis simples",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Par de criptomoedas (BRLBTC ou BRLETH)",
+                        "name": "pair",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Timestamp Unix de início",
+                        "name": "from",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Timestamp Unix de fim (opcional, default: dia anterior)",
+                        "name": "to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Período da média móvel (20, 50 ou 200)",
+                        "name": "range",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de médias móveis",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/handlers.MMSResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Erro de validação",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handlers.MMSResponse": {
+            "type": "object",
+            "properties": {
+                "mms": {
+                    "type": "number",
+                    "example": 45000
+                },
+                "timestamp": {
+                    "type": "integer",
+                    "example": 1620000000
+                }
+            }
+        }
+    }
+}

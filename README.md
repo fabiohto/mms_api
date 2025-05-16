@@ -149,25 +149,44 @@ make coverage
 └── test/                 # Testes unitários e de integração
 ```
 
-## API Documentation
+## Documentação da API
 
-A documentação da API está disponível através do Swagger UI. Após iniciar o serviço, você pode acessar:
+### Swagger UI
 
+A documentação interativa da API está disponível através do Swagger UI. Para acessá-la:
+
+1. Inicie o serviço:
+```bash
+make up
+```
+
+2. Acesse a documentação em seu navegador:
 ```
 http://localhost:8080/swagger/index.html
 ```
 
-Para gerar/atualizar a documentação:
+### Desenvolvimento da Documentação
+
+Para desenvolvedores que precisam atualizar a documentação:
+
+1. A documentação é gerada automaticamente a partir das anotações no código
+2. Após fazer alterações nas anotações, regenere a documentação:
 ```bash
 make swagger
 ```
 
-A documentação inclui:
-- Descrição detalhada de todos os endpoints
-- Modelos de requisição e resposta
-- Códigos de status HTTP
-- Parâmetros necessários e opcionais
-- Exemplos de uso
+3. As alterações estarão disponíveis imediatamente no Swagger UI
+
+### Recursos da Documentação
+
+A documentação interativa oferece:
+- **Descrição Detalhada**: Todos os endpoints documentados
+- **Playground**: Teste as APIs diretamente pela interface
+- **Modelos**: Visualize os formatos de request/response
+- **Códigos de Status**: Todos os possíveis retornos documentados
+- **Parâmetros**: Descrição clara dos parâmetros necessários
+- **Exemplos**: Requests e responses de exemplo
+- **Autenticação**: Métodos de autenticação suportados (quando aplicável)
 
 ## Endpoints
 
