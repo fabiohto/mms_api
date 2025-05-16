@@ -4,7 +4,7 @@ VERSION?=1.0.0
 GOCMD=go
 GOTEST=$(GOCMD) test
 GOMOD=$(GOCMD) mod
-DOCKER_COMPOSE=`docker compose`
+DOCKER_COMPOSE=docker compose
 DOCKER_COMPOSE_FILE=docker-compose.yml
 SWAG=swag
 
