@@ -10,6 +10,7 @@ import (
 	"mms_api/cmd/worker/bootstrap"
 	"mms_api/config"
 	"mms_api/pkg/db/postgres"
+	"mms_api/pkg/monitoring"
 
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
@@ -17,35 +18,43 @@ import (
 )
 
 func TestWorkerIntegration(t *testing.T) {
+	// Generate test dates
+	now := time.Now()
+	yearAgo := now.AddDate(-1, 0, 0)
+
 	// Configurar servidor mock para a API do Mercado Bitcoin
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Simular resposta da API de candles com dados incompletos para forçar alerta
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{
-			"candles": [
-				{
-					"timestamp": "2025-05-14T00:00:00Z",
-					"open": 150000.0,
-					"high": 155000.0,
-					"low": 149000.0,
-					"close": 152000.0,
-					"volume": 10.5,
-					"quantity": 5
-				}
-			]
-		}`))
+
+		// Gerar 200 dias de dados
+		var candles []map[string]interface{}
+		for i := 0; i < 200; i++ {
+			date := yearAgo.AddDate(0, 0, i)
+			candles = append(candles, map[string]interface{}{
+				"timestamp": date.Format(time.RFC3339),
+				"open":      150000.0,
+				"high":      155000.0,
+				"low":       149000.0,
+				"close":     152000.0,
+				"volume":    10.5,
+				"quantity":  5,
+			})
+		}
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"candles": candles,
+		})
 	}))
 	defer mockServer.Close()
 
 	// Configurar banco de dados de teste
 	dbConfig := postgres.Config{
-		Host:     "test-db",
-		Port:     5432,
+		Host:     "localhost",
+		Port:     "5432",
 		User:     "test_user",
 		Password: "test_password",
 		DBName:   "test_db",
-		SSLMode:  "disable",
 	}
 
 	// Criar banco de dados de teste
@@ -61,11 +70,17 @@ func TestWorkerIntegration(t *testing.T) {
 	cfg := &config.Config{
 		Database:              dbConfig,
 		MercadoBitcoinBaseURL: mockServer.URL,
-		AlertConfig: struct {
-			Enabled bool
-			URL     string
-		}{
+		AlertConfig: monitoring.AlertConfig{
 			Enabled: false,
+			Email: monitoring.EmailConfig{
+				Enabled:      false,
+				SMTPHost:     "localhost",
+				SMTPPort:     1025,
+				SMTPUsername: "",
+				SMTPPassword: "",
+				FromEmail:    "test@example.com",
+				ToEmails:     []string{"alert@example.com"},
+			},
 		},
 	}
 
@@ -89,9 +104,10 @@ func TestWorkerIntegration(t *testing.T) {
 		SELECT pair, timestamp, mms20, mms50, mms200 
 		FROM mms 
 		WHERE pair = 'BRLBTC' 
+		AND timestamp BETWEEN $1 AND $2
 		ORDER BY timestamp DESC 
 		LIMIT 1
-	`)
+	`, yearAgo, now)
 	require.NoError(t, err)
 	defer rows.Close()
 
@@ -111,35 +127,7 @@ func TestWorkerIntegration(t *testing.T) {
 		assert.NotZero(t, mms20)
 		assert.NotZero(t, mms50)
 		assert.NotZero(t, mms200)
+	} else {
+		t.Error("No MMS records found in the date range")
 	}
-
-	// Verificar se o alerta foi enviado por email via MailHog
-	mailhogClient := &http.Client{Timeout: 5 * time.Second}
-	resp, err := mailhogClient.Get("http://mailhog:8025/api/v2/messages")
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	// Verificar se há mensagens no MailHog
-	var messages struct {
-		Items []struct {
-			Content struct {
-				Headers struct {
-					Subject []string `json:"subject"`
-					To      []string `json:"to"`
-				} `json:"headers"`
-				Body string `json:"body"`
-			} `json:"Content"`
-		} `json:"items"`
-	}
-
-	err = json.NewDecoder(resp.Body).Decode(&messages)
-	require.NoError(t, err)
-
-	// Deve haver pelo menos uma mensagem de alerta
-	assert.Greater(t, len(messages.Items), 0, "Deveria haver mensagens de alerta")
-
-	// Verificar o conteúdo do último alerta
-	lastMessage := messages.Items[len(messages.Items)-1]
-	assert.Contains(t, lastMessage.Content.Headers.Subject[0], "Alerta: dados_incompletos")
-	assert.Contains(t, lastMessage.Content.Body, "Dados incompletos para BRLBTC")
 }

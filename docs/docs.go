@@ -116,8 +116,6 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "API para cálculo e consulta de Médias Móveis Simples de criptomoedas",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {

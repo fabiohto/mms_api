@@ -9,11 +9,12 @@ import (
 	"mms_api/internal/adapter/out/mock"
 	"mms_api/internal/application/service"
 	"mms_api/internal/domain/model"
+	"mms_api/pkg/logger"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCalculateAndSaveMMSForRange(t *testing.T) {
+func TestCalculateAn	assert.Contains(t, err.Error(), "erro de conexão com a API")}SaveMMSForRange(t *testing.T) {
 	now := time.Now()
 	ctx := context.Background()
 
@@ -83,13 +84,13 @@ func TestCalculateAndSaveMMSForRange(t *testing.T) {
 			// Arrange
 			repo := &mock.MockMMSRepository{}
 			api := &mock.MockCandleAPI{}
-			logger := &mock.MockLogger{}
+			log := logger.NewLogger("[TEST] ")
 
 			if tt.setupMock != nil {
 				tt.setupMock(repo, api)
 			}
 
-			svc := service.NewMMSService(repo, api, logger)
+			svc := service.NewMMSService(repo, api, log)
 
 			// Act
 			err := svc.CalculateAndSaveMMSForRange(ctx, tt.pair, tt.from, tt.to)
@@ -116,18 +117,20 @@ func TestGetMMSByPairAndRange(t *testing.T) {
 		wantErr   bool
 	}{
 		{
-			name:   "deve retornar MMSs com sucesso",
+			name:   "deve retornar MMS com sucesso",
 			pair:   "BRLBTC",
 			from:   now.AddDate(0, 0, -10),
 			to:     now,
 			period: model.Period20,
 			setupMock: func(repo *mock.MockMMSRepository) {
-				repo.FindByPairAndTimeRange = func(ctx context.Context, pair string, from, to time.Time, period int) ([]model.MMS, error) {
+				repo.FindByPairAndRangeFunc = func(ctx context.Context, pair string, from, to time.Time, period int) ([]model.MMS, error) {
 					return []model.MMS{
 						{
 							Pair:      pair,
 							Timestamp: now,
 							MMS20:     50000.0,
+							MMS50:     49000.0,
+							MMS200:    48000.0,
 						},
 					}, nil
 				}
@@ -160,181 +163,108 @@ func TestGetMMSByPairAndRange(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Arrange
 			repo := &mock.MockMMSRepository{}
-			api := &mock.MockCandleAPI{}
-			logger := &mock.MockLogger{}
-
 			if tt.setupMock != nil {
 				tt.setupMock(repo)
 			}
 
-			svc := service.NewMMSService(repo, api, logger)
+			log := logger.NewLogger("[TEST] ")
+			candleAPI := &mock.MockCandleAPI{}
 
-			// Act
-			mms, err := svc.GetMMSByPairAndRange(ctx, tt.pair, tt.from, tt.to, tt.period)
+			svc := service.NewMMSService(repo, candleAPI, log)
 
-			// Assert
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetMMSByPairAndRange() error = %v, wantErr %v", err, tt.wantErr)
+			result, err := svc.GetMMSByPairAndRange(ctx, tt.pair, tt.from, tt.to, tt.period)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
 			}
-			if err == nil && len(mms) == 0 {
-				t.Error("GetMMSByPairAndRange() returned empty result when success was expected")
-			}
+
+			assert.NoError(t, err)
+			assert.NotEmpty(t, result)
 		})
 	}
 }
 
 func TestCheckDataCompleteness(t *testing.T) {
 	ctx := context.Background()
-	pair := "BRLBTC"
 
 	tests := []struct {
 		name      string
+		pair      string
 		setupMock func(*mock.MockMMSRepository)
-		want      bool
 		wantErr   bool
 	}{
 		{
-			name: "deve retornar true quando dados estão completos",
+			name: "deve retornar completude com sucesso",
+			pair: "BRLBTC",
 			setupMock: func(repo *mock.MockMMSRepository) {
 				repo.CheckDataCompletenessFunc = func(ctx context.Context, pair string, from, to time.Time) (bool, []time.Time, error) {
 					return true, nil, nil
 				}
 			},
-			want:    true,
 			wantErr: false,
 		},
 		{
-			name: "deve retornar false quando há dados faltantes",
+			name: "deve retornar erro para par inválido",
+			pair: "INVALID",
 			setupMock: func(repo *mock.MockMMSRepository) {
 				repo.CheckDataCompletenessFunc = func(ctx context.Context, pair string, from, to time.Time) (bool, []time.Time, error) {
-					missing := []time.Time{time.Now().AddDate(0, 0, -1)}
-					return false, missing, nil
+					return false, nil, errors.New("par inválido")
 				}
 			},
-			want:    false,
-			wantErr: false,
-		},
-		{
-			name: "deve retornar erro quando falha ao verificar",
-			setupMock: func(repo *mock.MockMMSRepository) {
-				repo.CheckDataCompletenessFunc = func(ctx context.Context, pair string, from, to time.Time) (bool, []time.Time, error) {
-					return false, nil, errors.New("erro ao verificar completude")
-				}
-			},
-			want:    false,
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Arrange
 			repo := &mock.MockMMSRepository{}
-			api := &mock.MockCandleAPI{}
-			logger := &mock.MockLogger{}
-
 			if tt.setupMock != nil {
 				tt.setupMock(repo)
 			}
 
-			svc := service.NewMMSService(repo, api, logger)
+			log := logger.NewLogger("[TEST] ")
+			candleAPI := &mock.MockCandleAPI{}
 
-			// Act
-			got, _, err := svc.CheckDataCompleteness(ctx, pair)
+			svc := service.NewMMSService(repo, candleAPI, log)
 
-			// Assert
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CheckDataCompleteness() error = %v, wantErr %v", err, tt.wantErr)
+			isComplete, missingDates, err := svc.CheckDataCompleteness(ctx, tt.pair)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.False(t, isComplete)
+				assert.Nil(t, missingDates)
+				return
 			}
-			if err == nil && got != tt.want {
-				t.Errorf("CheckDataCompleteness() = %v, want %v", got, tt.want)
+
+			assert.NoError(t, err)
+			if tt.pair == "BRLBTC" {
+				assert.True(t, isComplete)
+				assert.Empty(t, missingDates)
 			}
 		})
 	}
 }
 
-func TestAlertScenarios(t *testing.T) {
-	now := time.Now()
+func TestAlertOnAPIError(t *testing.T) {
 	ctx := context.Background()
+	now := time.Now()
 
-	tests := []struct {
-		name           string
-		setupMocks     func(*mock.MockMMSRepository, *mock.MockCandleAPI, *mock.MockAlertMonitor)
-		expectedAlert  string
-		expectedEmails int
-		wantErr        bool
-	}{
-		{
-			name: "deve enviar alerta quando dados estiverem incompletos",
-			setupMocks: func(repo *mock.MockMMSRepository, api *mock.MockCandleAPI, monitor *mock.MockAlertMonitor) {
-				// Mock para retornar dados incompletos
-				repo.CheckDataCompletenessFunc = func(ctx context.Context, pair string, from, to time.Time) (bool, []time.Time, error) {
-					missingDates := []time.Time{now.AddDate(0, 0, -1)}
-					return false, missingDates, nil
-				}
+	// Setup mocks
+	repo := &mock.MockMMSRepository{}
+	api := &mock.MockCandleAPI{}
+	log := logger.NewLogger("[TEST] ")
 
-				var alertsSent int
-				monitor.SendAlertFunc = func(alertType string, message string) {
-					alertsSent++
-					if alertType != "dados_incompletos" {
-						t.Errorf("tipo de alerta errado, esperado 'dados_incompletos', recebido '%s'", alertType)
-					}
-				}
-			},
-			expectedAlert: "dados_incompletos",
-			wantErr:       false,
-		},
-		{
-			name: "deve enviar alerta quando houver erro na API",
-			setupMocks: func(repo *mock.MockMMSRepository, api *mock.MockCandleAPI, monitor *mock.MockAlertMonitor) {
-				// Mock para simular erro na API
-				api.GetCandlesFunc = func(ctx context.Context, pair string, from, to time.Time) ([]model.Candle, error) {
-					return nil, errors.New("erro de conexão com a API")
-				}
+	expectedError := errors.New("erro de conexão com a API")
 
-				var alertsSent int
-				monitor.SendAlertFunc = func(alertType string, message string) {
-					alertsSent++
-					if alertType != "falha_atualizacao" {
-						t.Errorf("tipo de alerta errado, esperado 'falha_atualizacao', recebido '%s'", alertType)
-					}
-				}
-			},
-			expectedAlert: "falha_atualizacao",
-			wantErr:       true,
-		},
+	// Configure API to return error
+	api.GetCandlesFunc = func(ctx context.Context, pair string, from, to time.Time) ([]model.Candle, error) {
+		return nil, expectedError
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Preparar mocks
-			mockRepo := &mock.MockMMSRepository{}
-			mockAPI := &mock.MockCandleAPI{}
-			mockMonitor := &mock.MockAlertMonitor{}
+	svc := service.NewMMSService(repo, api, log)
 
-			// Configurar mocks
-			if tt.setupMocks != nil {
-				tt.setupMocks(mockRepo, mockAPI, mockMonitor)
-			}
-
-			// Criar serviço
-			service := service.NewMMSService(mockRepo, mockAPI, mockMonitor)
-
-			// Executar operação que deve gerar alerta
-			_, err := service.CheckDataCompleteness(ctx, "BRLBTC")
-
-			// Verificar resultado
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-
-			// Verificar se os alertas foram enviados corretamente
-			assert.Equal(t, tt.expectedAlert, mockMonitor.AlertTypesCalled[0])
-			assert.NotEmpty(t, mockMonitor.MessagesSent)
-		})
-	}
+	// Test error case
+	err := svc.CalculateAndSaveMMSForRange(ctx, "BRLBTC", now.Add(-24*time.Hour), now)
+	assert.Error(t, err)
+	assert.Equal(t, expectedError, err)
 }

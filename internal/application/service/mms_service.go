@@ -111,36 +111,48 @@ func (s *mmsServiceImpl) CalculateAndSaveMMSForRange(ctx context.Context, pair s
 	return nil
 }
 
-// GetMMSByPairAndRange implementa a busca de MMSs por par e intervalo
-func (s *mmsServiceImpl) GetMMSByPairAndRange(ctx context.Context, pair string, from, to time.Time, period int) ([]model.MMS, error) {
-	// Validações
+// CheckDataCompleteness verifica a completude dos dados nos últimos 365 dias
+func (s *mmsServiceImpl) CheckDataCompleteness(ctx context.Context, pair string) (bool, []time.Time, error) {
+	// Validar par
+	if !model.IsValidPair(pair) {
+		return false, nil, errors.New("par inválido")
+	}
+
+	// Definir intervalo de verificação
+	now := time.Now()
+	from := now.AddDate(-1, 0, 0) // 1 ano atrás
+	to := now
+
+	// Verificar completude
+	isComplete, missingDates, err := s.repo.CheckDataCompleteness(ctx, pair, from, to)
+	if err != nil {
+		return false, nil, err
+	}
+
+	return isComplete, missingDates, nil
+}
+
+// GetMMSByPair retorna as médias móveis para um par específico e timeframe
+func (s *mmsServiceImpl) GetMMSByPair(ctx context.Context, pair string, timeframe string) ([]model.MMS, error) {
+	// Validar par
 	if !model.IsValidPair(pair) {
 		return nil, errors.New("par inválido")
 	}
 
+	return s.repo.GetMMSByPair(ctx, pair, timeframe)
+}
+
+// GetMMSByPairAndRange retorna as médias móveis para um par em um intervalo
+func (s *mmsServiceImpl) GetMMSByPairAndRange(ctx context.Context, pair string, from, to time.Time, period int) ([]model.MMS, error) {
+	// Validar par
+	if !model.IsValidPair(pair) {
+		return nil, errors.New("par inválido")
+	}
+	
+	// Validar período
 	if !model.IsValidPeriod(period) {
 		return nil, errors.New("período inválido")
 	}
 
-	// Verificar se a data de início não é muito antiga (365 dias)
-	oneYearAgo := time.Now().AddDate(-1, 0, 0)
-	if from.Before(oneYearAgo) {
-		return nil, errors.New("data de início não pode ser anterior a 365 dias")
-	}
-
-	// Buscar do repositório
 	return s.repo.FindByPairAndTimeRange(ctx, pair, from, to, period)
-}
-
-// CheckDataCompleteness verifica se há dados para todos os dias dos últimos 365 dias
-func (s *mmsServiceImpl) CheckDataCompleteness(ctx context.Context, pair string) (bool, []time.Time, error) {
-	to := time.Now()
-	from := to.AddDate(-1, 0, 0)
-
-	return s.repo.CheckDataCompleteness(ctx, pair, from, to)
-}
-
-// GetMMSByPair implementa o método da interface para obter MMSs por par
-func (s *mmsServiceImpl) GetMMSByPair(ctx context.Context, pair string, timeframe string) ([]model.MMS, error) {
-	return s.repo.GetMMSByPair(ctx, pair, timeframe)
 }

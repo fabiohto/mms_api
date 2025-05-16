@@ -7,26 +7,26 @@ import (
 
 	"mms_api/internal/adapter/out/persistence/postgres"
 	"mms_api/internal/domain/model"
-	"mms_api/pkg/db/postgres"
+	pgdb "mms_api/pkg/db/postgres"
 	"mms_api/pkg/logger"
 
+	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestMMSRepository_Integration(t *testing.T) {
 	// Configurar banco de dados de teste
-	dbConfig := postgres.Config{
+	dbConfig := pgdb.Config{
 		Host:     "localhost",
-		Port:     5432,
+		Port:     "5432",
 		User:     "test_user",
 		Password: "test_password",
 		DBName:   "test_db",
-		SSLMode:  "disable",
 	}
 
 	// Criar conexão
-	db, err := postgres.NewConnection(dbConfig)
+	db, err := pgdb.NewConnection(dbConfig)
 	require.NoError(t, err)
 	defer db.Close()
 
@@ -106,7 +106,9 @@ func TestMMSRepository_Integration(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verificar completude
-		isComplete, missingDates, err := repo.CheckDataCompleteness(ctx, "BRLETH")
+		from := now.Add(-48 * time.Hour)
+		to := now
+		isComplete, missingDates, err := repo.CheckDataCompleteness(ctx, "BRLETH", from, to)
 		require.NoError(t, err)
 
 		assert.False(t, isComplete)

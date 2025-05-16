@@ -3,11 +3,12 @@ CREATE TABLE IF NOT EXISTS mms (
     id SERIAL PRIMARY KEY,
     pair VARCHAR(10) NOT NULL,
     timestamp TIMESTAMP NOT NULL,
-    value DECIMAL(20, 8) NOT NULL,
-    period INTEGER NOT NULL,
+    mms20 DECIMAL(20, 8) NOT NULL,
+    mms50 DECIMAL(20, 8) NOT NULL,
+    mms200 DECIMAL(20, 8) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(pair, timestamp, period)
+    UNIQUE(pair, timestamp)
 );
 
 -- Create index for common queries

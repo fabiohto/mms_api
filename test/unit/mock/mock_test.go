@@ -7,6 +7,18 @@ import (
 	"mms_api/internal/domain/model"
 )
 
+// MockAlertMonitor é um mock do monitor de alertas para testes
+type MockAlertMonitor struct {
+	SendAlertFunc func(alertType string, message string)
+}
+
+// SendAlert envia um alerta
+func (m *MockAlertMonitor) SendAlert(alertType string, message string) {
+	if m.SendAlertFunc != nil {
+		m.SendAlertFunc(alertType, message)
+	}
+}
+
 // MockMMSRepository é um mock do repositório MMS para testes
 type MockMMSRepository struct {
 	SaveBatchFunc             func(ctx context.Context, mms []model.MMS) error
@@ -69,29 +81,4 @@ func (m *MockCandleAPI) GetCandles(ctx context.Context, pair string, from, to ti
 		return m.GetCandlesFunc(ctx, pair, from, to)
 	}
 	return nil, nil
-}
-
-// MockLogger é um mock do logger para testes
-type MockLogger struct {
-	InfoFunc  func(args ...interface{})
-	ErrorFunc func(args ...interface{})
-	FatalFunc func(args ...interface{})
-}
-
-func (m *MockLogger) Info(args ...interface{}) {
-	if m.InfoFunc != nil {
-		m.InfoFunc(args...)
-	}
-}
-
-func (m *MockLogger) Error(args ...interface{}) {
-	if m.ErrorFunc != nil {
-		m.ErrorFunc(args...)
-	}
-}
-
-func (m *MockLogger) Fatal(args ...interface{}) {
-	if m.FatalFunc != nil {
-		m.FatalFunc(args...)
-	}
 }

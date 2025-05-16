@@ -71,12 +71,44 @@ func (m *MockCandleAPI) GetCandles(ctx context.Context, pair string, from, to ti
 	return nil, nil
 }
 
-// MockLogger implementa a interface logger.Logger para testes
-type MockLogger struct{}
+// MockAlertMonitor é um mock do monitor de alertas para testes que também implementa logger.Logger
+type MockAlertMonitor struct {
+	AlertTypesCalled []string
+	MessagesSent     []string
+	SendAlertFunc    func(alertType string, message string)
+	InfoFunc         func(args ...interface{})
+	ErrorFunc        func(args ...interface{})
+	FatalFunc        func(args ...interface{})
+}
 
-func (m *MockLogger) Info(args ...interface{})                  {}
-func (m *MockLogger) Infof(format string, args ...interface{})  {}
-func (m *MockLogger) Error(args ...interface{})                 {}
-func (m *MockLogger) Errorf(format string, args ...interface{}) {}
-func (m *MockLogger) Fatal(args ...interface{})                 {}
-func (m *MockLogger) Fatalf(format string, args ...interface{}) {}
+func (m *MockAlertMonitor) Info(args ...interface{}) {
+	if m.InfoFunc != nil {
+		m.InfoFunc(args...)
+	}
+}
+
+func (m *MockAlertMonitor) Error(args ...interface{}) {
+	if m.ErrorFunc != nil {
+		m.ErrorFunc(args...)
+	}
+}
+
+func (m *MockAlertMonitor) Fatal(args ...interface{}) {
+	if m.FatalFunc != nil {
+		m.FatalFunc(args...)
+	}
+}
+
+func (m *MockAlertMonitor) SendAlert(alertType string, message string) {
+	if m.AlertTypesCalled == nil {
+		m.AlertTypesCalled = make([]string, 0)
+	}
+	if m.MessagesSent == nil {
+		m.MessagesSent = make([]string, 0)
+	}
+	m.AlertTypesCalled = append(m.AlertTypesCalled, alertType)
+	m.MessagesSent = append(m.MessagesSent, message)
+	if m.SendAlertFunc != nil {
+		m.SendAlertFunc(alertType, message)
+	}
+}

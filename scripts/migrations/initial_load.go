@@ -3,13 +3,15 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"time"
 
-	"mms-service/config"
-	"mms-service/internal/adapter/out/mercadobitcoin"
-	"mms-service/internal/adapter/out/persistence/postgres"
-	"mms-service/internal/application/service"
-	"mms-service/pkg/logger"
+	"mms_api/config"
+	"mms_api/internal/adapter/out/mercadobitcoin"
+	pgadapter "mms_api/internal/adapter/out/persistence/postgres"
+	"mms_api/internal/application/service"
+	pgdb "mms_api/pkg/db/postgres"
+	"mms_api/pkg/logger"
 )
 
 func main() {
@@ -20,20 +22,25 @@ func main() {
 	}
 
 	// Inicializar logger
-	l := logger.NewLogger()
+	l := logger.NewLogger("[INITIAL-LOAD] ")
 
 	// Conectar ao banco de dados
-	db, err := config.ConnectDB(cfg)
+	db, err := pgdb.NewConnection(cfg.Database)
 	if err != nil {
 		log.Fatalf("Erro ao conectar ao banco de dados: %v", err)
 	}
 	defer db.Close()
 
 	// Inicializar repositório
-	mmsRepo := postgres.NewMMSRepository(db, l)
+	mmsRepo := pgadapter.NewMMSRepository(db, l)
+
+	// Inicializar HTTP client para API de candles
+	httpClient := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 
 	// Inicializar API de candles
-	candleAPI := mercadobitcoin.NewCandleAPI(cfg.MercadoBitcoinBaseURL, nil, l)
+	candleAPI := mercadobitcoin.NewCandleAPI(cfg.MercadoBitcoinBaseURL, httpClient, l)
 
 	// Inicializar serviço
 	mmsService := service.NewMMSService(mmsRepo, candleAPI, l)
