@@ -14,7 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCalculateAn	assert.Contains(t, err.Error(), "erro de conexão com a API")}SaveMMSForRange(t *testing.T) {
+func TestCalculateAndSaveMMSForRange(t *testing.T) {
+	t.Parallel() // Paralelizar teste
 	now := time.Now()
 	ctx := context.Background()
 
@@ -104,6 +105,7 @@ func TestCalculateAn	assert.Contains(t, err.Error(), "erro de conexão com a API
 }
 
 func TestGetMMSByPairAndRange(t *testing.T) {
+	t.Parallel() // Paralelizar teste
 	now := time.Now()
 	ctx := context.Background()
 
@@ -186,6 +188,7 @@ func TestGetMMSByPairAndRange(t *testing.T) {
 }
 
 func TestCheckDataCompleteness(t *testing.T) {
+	t.Parallel() // Paralelizar teste
 	ctx := context.Background()
 
 	tests := []struct {
@@ -246,6 +249,7 @@ func TestCheckDataCompleteness(t *testing.T) {
 }
 
 func TestAlertOnAPIError(t *testing.T) {
+	t.Parallel() // Paralelizar teste
 	ctx := context.Background()
 	now := time.Now()
 
