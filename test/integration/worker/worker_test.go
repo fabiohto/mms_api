@@ -50,7 +50,7 @@ func TestWorkerIntegration(t *testing.T) {
 
 	// Configurar banco de dados de teste
 	dbConfig := postgres.Config{
-		Host:     "localhost",
+		Host:     "test-db",
 		Port:     "5432",
 		User:     "test_user",
 		Password: "test_password",
@@ -58,7 +58,7 @@ func TestWorkerIntegration(t *testing.T) {
 	}
 
 	// Criar banco de dados de teste
-	db, err := postgres.NewConnection(dbConfig)
+	db, err := postgres.NewConnectionWithTimeout(dbConfig)
 	require.NoError(t, err)
 	defer db.Close()
 

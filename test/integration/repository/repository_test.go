@@ -18,15 +18,15 @@ import (
 func TestMMSRepository_Integration(t *testing.T) {
 	// Configurar banco de dados de teste
 	dbConfig := pgdb.Config{
-		Host:     "localhost",
+		Host:     "test-db",
 		Port:     "5432",
 		User:     "test_user",
 		Password: "test_password",
 		DBName:   "test_db",
 	}
 
-	// Criar conexão
-	db, err := pgdb.NewConnection(dbConfig)
+	// Criar conexão com timeout
+	db, err := pgdb.NewConnectionWithTimeout(dbConfig)
 	require.NoError(t, err)
 	defer db.Close()
 
