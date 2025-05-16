@@ -12,7 +12,8 @@ import (
 // @version 1.0
 // @description API para cálculo e consulta de Médias Móveis Simples de criptomoedas
 // @host localhost:8080
-// @BasePath /api/v1
+// @BasePath /
+// @schemes http https
 type Router struct {
 	mmsHandler in.MMSHandler
 }
@@ -32,7 +33,8 @@ func (r *Router) SetupRoutes() *gin.Engine {
 	router.Use(gin.Logger())
 
 	// Swagger documentation
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	url := ginSwagger.URL("/swagger/doc.json") // The URL where swagger will find the JSON documentation
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, url))
 
 	// Health check endpoint
 	router.GET("/health", r.handleHealth())
@@ -40,10 +42,7 @@ func (r *Router) SetupRoutes() *gin.Engine {
 	// API v1 routes group
 	v1 := router.Group("/api/v1")
 	{
-		mms := v1.Group("/mms")
-		{
-			mms.GET("", r.mmsHandler.GetMMSByPair) // Get MMS by pair and timeframe
-		}
+		v1.GET("/:pair/mms", r.mmsHandler.GetMMSByPair) // Get MMS by pair and timeframe
 	}
 
 	return router

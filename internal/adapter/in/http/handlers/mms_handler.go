@@ -39,14 +39,14 @@ func NewMMSHandler(mmsService service.MMSService, logger logger.Logger) *mmsHand
 // @Tags MMS
 // @Accept json
 // @Produce json
-// @Param pair query string true "Par de criptomoedas (BRLBTC ou BRLETH)"
+// @Param pair path string true "Par de criptomoedas (BRLBTC ou BRLETH)"
 // @Param from query int true "Timestamp Unix de início"
 // @Param to query int false "Timestamp Unix de fim (opcional, default: dia anterior)"
 // @Param range query int true "Período da média móvel (20, 50 ou 200)"
 // @Success 200 {array} MMSResponse "Lista de médias móveis"
 // @Failure 400 {object} map[string]string "Erro de validação"
 // @Failure 500 {object} map[string]string "Erro interno"
-// @Router /mms [get]
+// @Router /{pair}/mms [get]
 func (h *mmsHandler) GetMMSByPair(c *gin.Context) {
 	// Extrair o par dos parâmetros da URL
 	pair := c.Param("pair")

@@ -1,4 +1,3 @@
-basePath: /api/v1
 definitions:
   handlers.MMSResponse:
     properties:
@@ -9,14 +8,10 @@ definitions:
         example: 1620000000
         type: integer
     type: object
-host: localhost:8080
 info:
   contact: {}
-  description: API para cálculo e consulta de Médias Móveis Simples de criptomoedas
-  title: MMS API
-  version: "1.0"
 paths:
-  /mms:
+  /{pair}/mms:
     get:
       consumes:
       - application/json
@@ -24,7 +19,7 @@ paths:
         em um intervalo de tempo
       parameters:
       - description: Par de criptomoedas (BRLBTC ou BRLETH)
-        in: query
+        in: path
         name: pair
         required: true
         type: string

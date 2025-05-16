@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	_ "mms_api/docs" // This imports the swagger docs
 	"mms_api/internal/bootstrap"
 )
 

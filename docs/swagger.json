@@ -1,15 +1,10 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "API para cálculo e consulta de Médias Móveis Simples de criptomoedas",
-        "title": "MMS API",
-        "contact": {},
-        "version": "1.0"
+        "contact": {}
     },
-    "host": "localhost:8080",
-    "basePath": "/api/v1",
     "paths": {
-        "/mms": {
+        "/{pair}/mms": {
             "get": {
                 "description": "Retorna as médias móveis simples (MMS) para um par de criptomoedas em um intervalo de tempo",
                 "consumes": [
@@ -27,7 +22,7 @@
                         "type": "string",
                         "description": "Par de criptomoedas (BRLBTC ou BRLETH)",
                         "name": "pair",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {

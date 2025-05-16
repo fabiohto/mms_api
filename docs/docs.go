@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/mms": {
+        "/{pair}/mms": {
             "get": {
                 "description": "Retorna as médias móveis simples (MMS) para um par de criptomoedas em um intervalo de tempo",
                 "consumes": [
@@ -33,7 +33,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Par de criptomoedas (BRLBTC ou BRLETH)",
                         "name": "pair",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {
@@ -108,14 +108,16 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
-	Host:             "localhost:8080",
-	BasePath:         "/api/v1",
+	Version:          "",
+	Host:             "",
+	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "MMS API",
-	Description:      "API para cálculo e consulta de Médias Móveis Simples de criptomoedas",
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {
