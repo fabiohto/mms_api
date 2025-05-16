@@ -9,6 +9,7 @@ import (
 	"mms_api/config"
 	"mms_api/internal/adapter/out/mercadobitcoin"
 	"mms_api/internal/adapter/out/persistence/postgres"
+	"mms_api/internal/application/port/out"
 	"mms_api/internal/application/service"
 	dbconfig "mms_api/pkg/db/postgres"
 	"mms_api/pkg/logger"
@@ -18,11 +19,12 @@ import (
 )
 
 type Worker struct {
-	mmsService   service.MMSService
-	mmsRepo      *postgres.MMSRepository
-	alertMonitor *monitoring.AlertMonitor
-	logger       logger.Logger
-	db           *sql.DB
+	mmsService    service.MMSService
+	mmsRepo       out.MMSRepository
+	alertMonitor  monitoring.AlertMonitor
+	logger        logger.Logger
+	db            *sql.DB
+	retryInterval time.Duration // Intervalo de retry configurável
 }
 
 func NewWorker(cfg *config.Config) (*Worker, error) {
@@ -54,12 +56,29 @@ func NewWorker(cfg *config.Config) (*Worker, error) {
 	alertMonitor := monitoring.NewAlertMonitor(cfg.AlertConfig, l)
 
 	return &Worker{
-		mmsService:   mmsService,
-		mmsRepo:      mmsRepo,
-		alertMonitor: alertMonitor,
-		logger:       l,
-		db:           db,
+		mmsService:    mmsService,
+		mmsRepo:       mmsRepo,
+		alertMonitor:  alertMonitor,
+		logger:        l,
+		db:            db,
+		retryInterval: 1 * time.Hour, // Valor padrão
 	}, nil
+}
+
+// NewWorkerWithDeps cria um novo worker com dependências injetadas (usado para testes)
+func NewWorkerWithDeps(mmsService service.MMSService, mmsRepo out.MMSRepository, alertMonitor monitoring.AlertMonitor, l logger.Logger) *Worker {
+	return &Worker{
+		mmsService:    mmsService,
+		mmsRepo:       mmsRepo,
+		alertMonitor:  alertMonitor,
+		logger:        l,
+		retryInterval: 100 * time.Millisecond, // Valor menor para testes
+	}
+}
+
+// SetRetryInterval configura o intervalo de retry
+func (w *Worker) SetRetryInterval(interval time.Duration) {
+	w.retryInterval = interval
 }
 
 // Close fecha as conexões do worker
@@ -75,7 +94,6 @@ func (w *Worker) Run() error {
 
 	// Configurações de retry
 	maxRetries := 5
-	retryInterval := 1 * time.Hour
 
 	// Pares a serem processados
 	pairs := []string{"BRLBTC", "BRLETH"}
@@ -112,7 +130,7 @@ func (w *Worker) Run() error {
 		for attempt := 0; attempt < maxRetries && !success; attempt++ {
 			if attempt > 0 {
 				w.logger.Info("Tentando novamente", "attempt", attempt+1, "pair", pair)
-				time.Sleep(retryInterval)
+				time.Sleep(w.retryInterval)
 			}
 
 			err := w.mmsService.CalculateAndSaveMMSForRange(ctx, pair, from, to)
