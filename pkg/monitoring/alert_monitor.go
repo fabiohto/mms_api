@@ -8,8 +8,13 @@ import (
 	"gopkg.in/mail.v2"
 )
 
-// AlertMonitor gerencia os alertas do sistema
-type AlertMonitor struct {
+// AlertMonitor é uma interface para envio de alertas
+type AlertMonitor interface {
+	SendAlert(alertType string, message string)
+}
+
+// alertMonitorImpl é a implementação concreta do AlertMonitor
+type alertMonitorImpl struct {
 	config AlertConfig
 	logger logger.Logger
 }
@@ -32,15 +37,15 @@ type EmailConfig struct {
 }
 
 // NewAlertMonitor cria uma nova instância do monitor de alertas
-func NewAlertMonitor(config AlertConfig, logger logger.Logger) *AlertMonitor {
-	return &AlertMonitor{
+func NewAlertMonitor(config AlertConfig, logger logger.Logger) AlertMonitor {
+	return &alertMonitorImpl{
 		config: config,
 		logger: logger,
 	}
 }
 
 // sendEmail envia um alerta por email
-func (m *AlertMonitor) sendEmail(alertType string, message string) error {
+func (m *alertMonitorImpl) sendEmail(alertType string, message string) error {
 	if !m.config.Email.Enabled {
 		return nil
 	}
@@ -72,7 +77,7 @@ func (m *AlertMonitor) sendEmail(alertType string, message string) error {
 }
 
 // SendAlert envia uma mensagem de alerta
-func (m *AlertMonitor) SendAlert(alertType string, message string) {
+func (m *alertMonitorImpl) SendAlert(alertType string, message string) {
 	if !m.config.Enabled {
 		return
 	}
