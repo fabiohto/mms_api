@@ -5,11 +5,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"mms_api/internal/domain/model"
 	"mms_api/pkg/logger"
 )
+
+// Struct para parsing do retorno da API oficial
+type apiCandle struct {
+	T int64  `json:"t"`
+	O string `json:"o"`
+	C string `json:"c"`
+	H string `json:"h"`
+	L string `json:"l"`
+	V string `json:"v"`
+	Q string `json:"q"`
+}
+
+type apiResponse struct {
+	Candles []apiCandle `json:"candles"`
+}
 
 // ApiResponse representa a resposta da API do Mercado Bitcoin
 type ApiResponse struct {
@@ -83,7 +99,7 @@ func (api *CandleAPI) GetCandles(ctx context.Context, pair string, from, to time
 		return nil, err
 	}
 
-	var response ApiResponse
+	var response apiResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		api.logger.Error("Erro ao decodificar resposta", err)
 		return nil, err
@@ -91,13 +107,19 @@ func (api *CandleAPI) GetCandles(ctx context.Context, pair string, from, to time
 
 	candles := make([]model.Candle, 0, len(response.Candles))
 	for _, c := range response.Candles {
+		open, _ := strconv.ParseFloat(c.O, 64)
+		close, _ := strconv.ParseFloat(c.C, 64)
+		high, _ := strconv.ParseFloat(c.H, 64)
+		low, _ := strconv.ParseFloat(c.L, 64)
+		volume, _ := strconv.ParseFloat(c.V, 64)
 		candle := model.Candle{
-			Timestamp: time.Unix(c.Timestamp, 0),
-			Open:      c.Open,
-			High:      c.High,
-			Low:       c.Low,
-			Close:     c.Close,
-			Volume:    c.Volume,
+			Pair:      pair,
+			Timestamp: time.Unix(c.T, 0),
+			Open:      open,
+			High:      high,
+			Low:       low,
+			Close:     close,
+			Volume:    volume,
 		}
 		candles = append(candles, candle)
 	}
