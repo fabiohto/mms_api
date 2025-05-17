@@ -115,15 +115,19 @@ func (w *Worker) Run() error {
 			from = lastTimestamp.AddDate(0, 0, 1)
 		}
 
-		// Se a data for posterior a hoje, não há nada a processar
-		today := time.Now()
-		if from.After(today) {
+		// Normalizar 'from' para o início do dia (UTC)
+		from = time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.UTC)
+
+		// Calcular até ontem (último dia completo disponível)
+		today := time.Now().UTC()
+		to := today.AddDate(0, 0, -1)
+		to = time.Date(to.Year(), to.Month(), to.Day(), 0, 0, 0, 0, time.UTC)
+
+		// Se 'from' for posterior a 'to', não há nada a processar
+		if from.After(to) {
 			w.logger.Info("Dados já atualizados", "pair", pair)
 			continue
 		}
-
-		// Calcular até ontem
-		to := today.AddDate(0, 0, -1)
 
 		// Processar com retry em caso de falha
 		success := false
