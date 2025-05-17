@@ -32,13 +32,13 @@ func TestWorkerIntegration(t *testing.T) {
 		for i := 0; i < 200; i++ {
 			date := yearAgo.AddDate(0, 0, i)
 			candles = append(candles, map[string]interface{}{
-				"timestamp": date.Format(time.RFC3339),
-				"open":      150000.0,
-				"high":      155000.0,
-				"low":       149000.0,
-				"close":     152000.0,
-				"volume":    10.5,
-				"quantity":  5,
+				"t": date.Unix(),
+				"o": "150000.0",
+				"h": "155000.0",
+				"l": "149000.0",
+				"c": "152000.0",
+				"v": "10.5",
+				"q": "5",
 			})
 		}
 
