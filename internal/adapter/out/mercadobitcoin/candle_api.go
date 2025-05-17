@@ -45,15 +45,24 @@ func NewCandleAPI(baseURL string, httpClient *http.Client, logger logger.Logger)
 	}
 }
 
+// convertPairFormat converte o formato do par de BRLBTC para BTC-BRL
+func convertPairFormat(pair string) string {
+	// De "BRLBTC" para "BTC-BRL"
+	return pair[3:] + "-BRL"
+}
+
 // GetCandles obtém os candles para um par em um intervalo de tempo
 func (api *CandleAPI) GetCandles(ctx context.Context, pair string, from, to time.Time) ([]model.Candle, error) {
 	url := fmt.Sprintf(
-		"%s/candles?symbol=%s&from=%d&to=%d",
+		"%s/candles?symbol=%s&from=%d&to=%d&resolution=1d",
 		api.baseURL,
-		pair,
+		convertPairFormat(pair),
 		from.Unix(),
 		to.Unix(),
 	)
+
+	// Log da URL chamada
+	api.logger.Info("Chamando URL da API do Mercado Bitcoin", "url", url)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -92,6 +101,9 @@ func (api *CandleAPI) GetCandles(ctx context.Context, pair string, from, to time
 		}
 		candles = append(candles, candle)
 	}
+
+	candleCount := len(response.Candles)
+	api.logger.Info("Quantidade de candles retornados pela API do Mercado Bitcoin", "count", candleCount)
 
 	return candles, nil
 }
