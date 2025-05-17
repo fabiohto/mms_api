@@ -15,7 +15,7 @@ services:
       - DB_USER=mms_user
       - DB_PASSWORD=mms_password
       - DB_NAME=mms_db
-      - MB_API_URL=https://api.mercadobitcoin.net/v4
+      - MB_API_URL=https://api.mercadobitcoin.net/api/v4
       - ALERTS_ENABLED=true
     depends_on:
       - postgres
@@ -33,7 +33,7 @@ services:
       - DB_USER=mms_user
       - DB_PASSWORD=mms_password
       - DB_NAME=mms_db
-      - MB_API_URL=https://api.mercadobitcoin.net/v4
+      - MB_API_URL=https://api.mercadobitcoin.net/api/v4
       - ALERT_ENABLED=true
       - ALERT_EMAIL_ENABLED=true
       - SMTP_HOST=smtp.gmail.com
@@ -46,7 +46,7 @@ services:
       - DB_USER=mms_user
       - DB_PASSWORD=mms_password
       - DB_NAME=mms_db
-      - MB_API_URL=https://api.mercadobitcoin.net/v4
+      - MB_API_URL=https://api.mercadobitcoin.net/api/v4
       - ALERTS_ENABLED=true
     depends_on:
       - postgres
