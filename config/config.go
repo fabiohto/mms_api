@@ -63,3 +63,14 @@ func getEnvAsSlice(key string, sep string) []string {
 	}
 	return []string{}
 }
+
+// Para testar alertas de email com Mailhog:
+// - Rode: docker run -d -p 1025:1025 -p 8025:8025 mailhog/mailhog
+// - Configure as variáveis de ambiente:
+//     SMTP_HOST=localhost
+//     SMTP_PORT=1025
+//     ALERT_EMAIL_ENABLED=true
+//     ALERT_ENABLED=true
+//     ALERT_FROM_EMAIL=from@example.com
+//     ALERT_TO_EMAILS=to@example.com
+// - Acesse http://localhost:8025 para visualizar os emails enviados.
