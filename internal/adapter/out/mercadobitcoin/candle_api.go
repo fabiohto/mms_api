@@ -13,31 +13,19 @@ import (
 )
 
 // Struct para parsing do retorno da API oficial
-type apiCandle struct {
-	T int64  `json:"t"`
-	O string `json:"o"`
-	C string `json:"c"`
-	H string `json:"h"`
-	L string `json:"l"`
-	V string `json:"v"`
-	Q string `json:"q"`
-}
-
 type apiResponse struct {
-	Candles []apiCandle `json:"candles"`
+	T []int64  `json:"t"`
+	O []string `json:"o"`
+	C []string `json:"c"`
+	H []string `json:"h"`
+	L []string `json:"l"`
+	V []string `json:"v"`
+	Q []string `json:"q"`
 }
 
-// ApiResponse representa a resposta da API do Mercado Bitcoin
-type ApiResponse struct {
-	Candles []struct {
-		Timestamp int64   `json:"timestamp"`
-		Open      float64 `json:"open"`
-		High      float64 `json:"high"`
-		Low       float64 `json:"low"`
-		Close     float64 `json:"close"`
-		Volume    float64 `json:"volume"`
-	} `json:"candles"`
-}
+//type apiResponse struct {
+//	Candles []apiCandle `json:"candles"`
+//}
 
 // CandleAPI encapsula a comunicação com a API do Mercado Bitcoin
 type CandleAPI struct {
@@ -105,16 +93,16 @@ func (api *CandleAPI) GetCandles(ctx context.Context, pair string, from, to time
 		return nil, err
 	}
 
-	candles := make([]model.Candle, 0, len(response.Candles))
-	for _, c := range response.Candles {
-		open, _ := strconv.ParseFloat(c.O, 64)
-		close, _ := strconv.ParseFloat(c.C, 64)
-		high, _ := strconv.ParseFloat(c.H, 64)
-		low, _ := strconv.ParseFloat(c.L, 64)
-		volume, _ := strconv.ParseFloat(c.V, 64)
+	candles := make([]model.Candle, 0, len(response.T))
+	for i := 0; i < len(response.T); i++ {
+		open, _ := strconv.ParseFloat(response.O[i], 64)
+		close, _ := strconv.ParseFloat(response.C[i], 64)
+		high, _ := strconv.ParseFloat(response.H[i], 64)
+		low, _ := strconv.ParseFloat(response.L[i], 64)
+		volume, _ := strconv.ParseFloat(response.V[i], 64)
 		candle := model.Candle{
 			Pair:      pair,
-			Timestamp: time.Unix(c.T, 0),
+			Timestamp: time.Unix(response.T[i], 0),
 			Open:      open,
 			High:      high,
 			Low:       low,
@@ -124,7 +112,7 @@ func (api *CandleAPI) GetCandles(ctx context.Context, pair string, from, to time
 		candles = append(candles, candle)
 	}
 
-	candleCount := len(response.Candles)
+	candleCount := len(candles)
 	api.logger.Info("Quantidade de candles retornados pela API do Mercado Bitcoin", "count", candleCount)
 
 	return candles, nil
