@@ -36,20 +36,13 @@ services:
       - MB_API_URL=https://api.mercadobitcoin.net/api/v4
       - ALERT_ENABLED=true
       - ALERT_EMAIL_ENABLED=true
-      - SMTP_HOST=smtp.gmail.com
-      - SMTP_PORT=587
-      - SMTP_USERNAME=seu-email@gmail.com
-      - SMTP_PASSWORD=sua-senha-app
-      - ALERT_FROM_EMAIL=seu-email@gmail.com
-      - ALERT_TO_EMAILS=destino1@email.com,destino2@email.com
-      - DB_PORT=5432
-      - DB_USER=mms_user
-      - DB_PASSWORD=mms_password
-      - DB_NAME=mms_db
-      - MB_API_URL=https://api.mercadobitcoin.net/api/v4
-      - ALERTS_ENABLED=true
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - ALERT_FROM_EMAIL=from@example.com
+      - ALERT_TO_EMAILS=to@example.com
     depends_on:
       - postgres
+      - mailhog
     networks:
       - mms_network
 
@@ -81,6 +74,15 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - mms_network
+
+  # Mailhog Service
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
     networks:
       - mms_network
 
