@@ -20,6 +20,8 @@ O serviço consiste em dois componentes principais:
 - **API**: Fornece endpoints REST para consulta de médias móveis
 - **Worker**: Executa periodicamente para calcular e atualizar as médias móveis
 
+A atualização dos dados é realizada através de um job agendado que é executado uma vez por dia, consumindo a API do Mercado Bitcoin para obter as informações mais recentes dos pares de criptomoedas.
+
 O sistema calcula três tipos de médias móveis:
 - MMS20 (20 períodos)
 - MMS50 (50 períodos)
@@ -130,6 +132,41 @@ make coverage
 - **Métricas**: Acessíveis via Prometheus em `http://localhost:9090`
 - **Alertas**: Configurados via email, com suporte a diferentes tipos de notificação
 - **Logs**: Formato JSON para fácil integração com ferramentas de análise
+
+### Visualização de Alertas no MailHog
+
+O projeto utiliza o MailHog como servidor SMTP para capturar e visualizar emails de alerta, tanto em ambiente de desenvolvimento quanto durante a execução dos testes de integração.
+
+#### Acessando o MailHog
+
+1. Interface Web do MailHog: `http://localhost:8025`
+   - Visualize todos os emails enviados
+   - Interface intuitiva com preview em tempo real
+   - Filtragem e busca de mensagens
+
+#### Cenários de Visualização
+
+1. **Durante Testes de Integração**:
+   ```bash
+   make integration-test
+   ```
+   - Os emails de teste serão capturados automaticamente pelo MailHog
+   - Acesse a interface web para verificar os alertas gerados pelos testes
+   - Os emails são limpos a cada nova execução dos testes
+
+2. **Em Ambiente de Desenvolvimento**:
+   - Quando ocorrer um erro real que gere alerta
+   - Os emails serão enviados automaticamente para o MailHog
+   - Acesse a interface web para analisar os alertas em tempo real
+   - Útil para validar o formato e conteúdo dos alertas
+
+#### Tipos de Alertas
+
+Os alertas podem ser visualizados no MailHog incluindo:
+- Falhas na coleta de dados
+- Erros de processamento
+- Problemas de conectividade
+- Alertas de performance
 
 ## Estrutura do Projeto
 
